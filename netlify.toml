@@ -1,5 +1,7 @@
- [build]
-      # No 'command' is strictly necessary for client-side React embedded in index.html.
-      # If Netlify requires a command, use a placeholder:
+ # netlify.toml (combined with above [build] section)
+    [build]
       command = "echo 'No traditional build step required for client-side React.'"
-      publish = "." # CRITICAL: Publish the root directory where index.html is located.
+      publish = "."
+
+    [functions]
+      directory = "netlify/functions" # Point to the location of your Netlify Function.
