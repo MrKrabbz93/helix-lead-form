@@ -1,7 +1,6 @@
- # netlify.toml (combined with above [build] section)
-    [build]
-      command = "echo 'No traditional build step required for client-side React.'"
-      publish = "."
+[build]
+  command = "echo 'Static site ready'"
+  publish = "."
 
-    [functions]
-      directory = "netlify/functions" # Point to the location of your Netlify Function.
+[functions]
+  directory = "netlify/functions"
