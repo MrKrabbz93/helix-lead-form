@@ -1,6 +1,6 @@
 [build]
-  command = "npm ci"          # Forces install of all deps from package.json
-  publish = "."               Serves your index.html directly
+  command = "npm ci"
+  publish = "."
 
 [functions]
   directory = "netlify/functions"
