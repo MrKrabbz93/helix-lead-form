@@ -1,5 +1,5 @@
 [build]
-  command = "echo 'Static site – no build required'"
+  command = "echo 'Static deploy'"
   publish = "."
 
 [functions]
