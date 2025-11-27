@@ -1,6 +1,6 @@
 [build]
-  command = "echo 'Static site ready'"
-  publish = "."
+  command = "npm ci"          # Forces install of all deps from package.json
+  publish = "."               Serves your index.html directly
 
 [functions]
   directory = "netlify/functions"
