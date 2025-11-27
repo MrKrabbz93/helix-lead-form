@@ -1,0 +1,540 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Settings, 
+  Palette, 
+  Type, 
+  MessageSquare, 
+  ListFilter, 
+  CheckCircle2, 
+  ShieldCheck, 
+  Mail, 
+  ArrowRight,
+  Activity,
+  Zap,
+  Layout,
+  ChevronDown,
+  Lock,
+  Link as LinkIcon,
+  Bell
+} from 'lucide-react';
+
+// --- Components ---
+
+// Simple tooltip-like card for "Guild Insights"
+const GuildInsight = ({ author, quote }) => (
+  <div className="mt-3 p-3 bg-slate-800/50 border-l-4 border-indigo-500 rounded-r text-xs text-slate-300 italic">
+    <span className="font-bold text-indigo-400 not-italic block mb-1">Guild Insight ({author}):</span>
+    "{quote}"
+  </div>
+);
+
+// The Main Application Component
+export default function App() {
+  const [activeTab, setActiveTab] = useState('config'); // 'config' or 'preview' (for mobile mostly)
+  const [showHelixEngine, setShowHelixEngine] = useState(false); // Submission simulation state
+  const [helixStep, setHelixStep] = useState(0); // 0-3 for simulation steps
+  const [isSubmitting, setIsSubmitting] = useState(false); // New submission state
+
+  // --- Configuration State (Phase 1 & 2) ---
+  const [config, setConfig] = useState({
+    // 1. Brand Integration
+    brandName: "Acme High-Ticket Consulting",
+    primaryColor: "#0f172a", // Slate-900
+    accentColor: "#6366f1",  // Indigo-500
+    logoText: "ACME",
+    logoUrl: "", 
+    fontStyle: "sans", 
+    
+    // 2. Compelling Messaging
+    headline: "Secure Your Strategic Growth Session",
+    subtext: "Exclusive to businesses generating $1M+ annually. Discover the roadmap to 10x your valuation.",
+    ctaText: "Request My Strategy Audit",
+    
+    // 3. Strategic Gathering
+    fields: {
+      phone: true,
+      budget: true,
+      timeline: false,
+      description: true
+    },
+
+    // 4. Compliance & Notification
+    privacyPolicyUrl: "#",
+    notificationEmail: "client@example.com" // New field for backend routing
+  });
+
+  // --- Handlers ---
+  const handleConfigChange = (section, key, value) => {
+    if (section === 'root') {
+      setConfig(prev => ({ ...prev, [key]: value }));
+    } else if (section === 'fields') {
+      setConfig(prev => ({ ...prev, fields: { ...prev.fields, [key]: value } }));
+    }
+  };
+
+  // Phase 1: Backend Actualization Logic
+  const handleSimulateSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // 1. Collect Real Data
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    // Add configuration data needed by backend (Notification routing & Branding)
+    payload.notificationEmail = config.notificationEmail;
+    payload.brandName = config.brandName;
+
+    // Check Honeypot (Client-side early exit)
+    if (payload._gotcha) {
+      console.warn("Bot detected via honeypot.");
+      setIsSubmitting(false);
+      return; 
+    }
+
+    // 2. Transmit to Helix Backend
+    try {
+      // Pointing to the Netlify Function location
+      const response = await fetch('/.netlify/functions/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log("Helix Backend Response:", result);
+
+      // 3. Success: Trigger Helix Visualization
+      setIsSubmitting(false);
+      setShowHelixEngine(true);
+      setHelixStep(0);
+
+    } catch (error) {
+      console.error('Submission Error:', error);
+      alert('We encountered an issue submitting your request. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- Effect for Helix Simulation ---
+  useEffect(() => {
+    if (showHelixEngine && helixStep < 4) {
+      const timer = setTimeout(() => {
+        setHelixStep(prev => prev + 1);
+      }, 1200); // Delay between steps
+      return () => clearTimeout(timer);
+    }
+  }, [showHelixEngine, helixStep]);
+
+  // --- Render Helpers ---
+  const getFontClass = () => {
+    if (config.fontStyle === 'serif') return 'font-serif';
+    if (config.fontStyle === 'mono') return 'font-mono';
+    return 'font-sans';
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans">
+      
+      {/* --- Sidebar: Configuration (Phase 1) --- */}
+      <div className={`w-full md:w-1/3 lg:w-96 bg-slate-900 border-r border-slate-800 overflow-y-auto ${activeTab === 'preview' ? 'hidden md:block' : 'block'}`}>
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="text-indigo-500 w-6 h-6" />
+            <h1 className="text-xl font-bold tracking-tight">Helix Form Builder</h1>
+          </div>
+          <p className="text-xs text-slate-400">Phase 1: Configure Client Experience</p>
+        </div>
+
+        <div className="p-6 space-y-8">
+          
+          {/* Section 1: Brand */}
+          <section>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">
+              <Palette className="w-4 h-4" /> Brand Integration
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Company Name</label>
+                <input 
+                  type="text" 
+                  value={config.brandName} 
+                  onChange={(e) => handleConfigChange('root', 'brandName', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Logo URL (Optional)</label>
+                <input 
+                  type="text" 
+                  placeholder="https://..."
+                  value={config.logoUrl} 
+                  onChange={(e) => handleConfigChange('root', 'logoUrl', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Logo Text (Fallback)</label>
+                <input 
+                  type="text" 
+                  value={config.logoText} 
+                  onChange={(e) => handleConfigChange('root', 'logoText', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Primary Color</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="color" 
+                      value={config.primaryColor}
+                      onChange={(e) => handleConfigChange('root', 'primaryColor', e.target.value)}
+                      className="h-8 w-12 bg-transparent cursor-pointer rounded"
+                    />
+                    <span className="text-xs text-slate-500 self-center uppercase">{config.primaryColor}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Accent Color</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="color" 
+                      value={config.accentColor}
+                      onChange={(e) => handleConfigChange('root', 'accentColor', e.target.value)}
+                      className="h-8 w-12 bg-transparent cursor-pointer rounded"
+                    />
+                    <span className="text-xs text-slate-500 self-center uppercase">{config.accentColor}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Typography</label>
+                <select 
+                  value={config.fontStyle}
+                  onChange={(e) => handleConfigChange('root', 'fontStyle', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm outline-none"
+                >
+                  <option value="sans">Modern Sans</option>
+                  <option value="serif">Classic Serif</option>
+                  <option value="mono">Technical Mono</option>
+                </select>
+              </div>
+            </div>
+            <GuildInsight author="swyx" quote="Consistency builds trust. A form that feels like your brand boosts conversion." />
+          </section>
+
+          {/* Section 2: Messaging */}
+          <section>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">
+              <MessageSquare className="w-4 h-4" /> Compelling Messaging
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Primary Headline</label>
+                <input 
+                  type="text" 
+                  value={config.headline} 
+                  onChange={(e) => handleConfigChange('root', 'headline', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Supporting Subtext</label>
+                <textarea 
+                  value={config.subtext} 
+                  onChange={(e) => handleConfigChange('root', 'subtext', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none h-20 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">CTA Button Text</label>
+                <input 
+                  type="text" 
+                  value={config.ctaText} 
+                  onChange={(e) => handleConfigChange('root', 'ctaText', e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+            <GuildInsight author="Chase Hughes" quote="Words are powerful. Use language that resonates with aspiration and urgency." />
+          </section>
+
+          {/* Section 3: Fields */}
+          <section>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">
+              <ListFilter className="w-4 h-4" /> Strategic Gathering
+            </h3>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-2 bg-slate-800/50 rounded cursor-pointer hover:bg-slate-800 transition">
+                <input 
+                  type="checkbox" 
+                  checked={config.fields.phone}
+                  onChange={(e) => handleConfigChange('fields', 'phone', e.target.checked)}
+                  className="rounded text-indigo-500 focus:ring-0 bg-slate-700 border-slate-600"
+                />
+                <span className="text-sm">Phone Number</span>
+              </label>
+              <label className="flex items-center gap-3 p-2 bg-slate-800/50 rounded cursor-pointer hover:bg-slate-800 transition">
+                <input 
+                  type="checkbox" 
+                  checked={config.fields.budget}
+                  onChange={(e) => handleConfigChange('fields', 'budget', e.target.checked)}
+                  className="rounded text-indigo-500 focus:ring-0 bg-slate-700 border-slate-600"
+                />
+                <span className="text-sm">Budget Range (Dropdown)</span>
+              </label>
+              <label className="flex items-center gap-3 p-2 bg-slate-800/50 rounded cursor-pointer hover:bg-slate-800 transition">
+                <input 
+                  type="checkbox" 
+                  checked={config.fields.timeline}
+                  onChange={(e) => handleConfigChange('fields', 'timeline', e.target.checked)}
+                  className="rounded text-indigo-500 focus:ring-0 bg-slate-700 border-slate-600"
+                />
+                <span className="text-sm">Timeline Expectation</span>
+              </label>
+              <label className="flex items-center gap-3 p-2 bg-slate-800/50 rounded cursor-pointer hover:bg-slate-800 transition">
+                <input 
+                  type="checkbox" 
+                  checked={config.fields.description}
+                  onChange={(e) => handleConfigChange('fields', 'description', e.target.checked)}
+                  className="rounded text-indigo-500 focus:ring-0 bg-slate-700 border-slate-600"
+                />
+                <span className="text-sm">Project Description</span>
+              </label>
+            </div>
+            <GuildInsight author="Santiago" quote="Design for maximum qualification with minimum friction." />
+          </section>
+
+          {/* Section 4: Compliance & Notification (Phase 3) */}
+          <section>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">
+              <Lock className="w-4 h-4" /> Compliance & Routing
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Lead Notification Email</label>
+                <div className="flex gap-2">
+                  <Bell className="w-4 h-4 text-slate-500" />
+                  <input 
+                    type="email" 
+                    placeholder="client@company.com"
+                    value={config.notificationEmail} 
+                    onChange={(e) => handleConfigChange('root', 'notificationEmail', e.target.value)}
+                    className="w-full bg-slate-800 border-none rounded text-sm focus:ring-0 px-0 outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">This email will receive all new lead alerts.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Privacy Policy URL</label>
+                <div className="flex gap-2">
+                  <LinkIcon className="w-4 h-4 text-slate-500" />
+                  <input 
+                    type="text" 
+                    placeholder="#"
+                    value={config.privacyPolicyUrl} 
+                    onChange={(e) => handleConfigChange('root', 'privacyPolicyUrl', e.target.value)}
+                    className="w-full bg-slate-800 border-none rounded text-sm focus:ring-0 px-0 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <GuildInsight author="jchervinsky" quote="Transparent data handling builds trust and mitigates risk." />
+          </section>
+
+        </div>
+      </div>
+
+      {/* --- Main Area: Preview (Client Experience) --- */}
+      <div className={`flex-1 relative bg-slate-950 flex flex-col items-center justify-center p-4 md:p-12 ${activeTab === 'config' ? 'hidden md:flex' : 'flex'}`}>
+        
+        {/* Mobile Toggle */}
+        <div className="md:hidden fixed top-4 right-4 z-50 bg-slate-800 rounded-full p-1 flex">
+          <button onClick={() => setActiveTab('config')} className={`px-4 py-2 rounded-full text-xs font-bold ${activeTab === 'config' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Edit</button>
+          <button onClick={() => setActiveTab('preview')} className={`px-4 py-2 rounded-full text-xs font-bold ${activeTab === 'preview' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>View</button>
+        </div>
+
+        {/* Phase 2: Helix Engine Overlay (Simulation) */}
+        {showHelixEngine && (
+          <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-full max-w-md p-8">
+              <h2 className="text-2xl font-bold mb-6 text-center text-white flex items-center justify-center gap-3">
+                <Zap className="text-yellow-400 fill-yellow-400 animate-pulse" />
+                Helix Engine Active
+              </h2>
+              
+              <div className="space-y-6">
+                {/* Step 1: Secure Capture */}
+                <div className={`flex items-center gap-4 transition-all duration-500 ${helixStep >= 1 ? 'opacity-100 translate-x-0' : 'opacity-30 -translate-x-4'}`}>
+                  <div className={`p-2 rounded-full ${helixStep >= 1 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-600'}`}>
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm">Secure Data Capture</h4>
+                    <p className="text-xs text-slate-400">Encrypting and verifying submission integrity.</p>
+                  </div>
+                  {helixStep >= 1 && <CheckCircle2 className="ml-auto w-5 h-5 text-green-500" />}
+                </div>
+
+                {/* Step 2: Qualification Logic */}
+                <div className={`flex items-center gap-4 transition-all duration-500 ${helixStep >= 2 ? 'opacity-100 translate-x-0' : 'opacity-30 -translate-x-4'}`}>
+                  <div className={`p-2 rounded-full ${helixStep >= 2 ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-600'}`}>
+                    <Layout className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm">Helix Qualification Cycle</h4>
+                    <p className="text-xs text-slate-400">Analyzing intent signals against high-ticket criteria.</p>
+                  </div>
+                  {helixStep >= 2 && <CheckCircle2 className="ml-auto w-5 h-5 text-green-500" />}
+                </div>
+
+                {/* Step 3: Notification */}
+                <div className={`flex items-center gap-4 transition-all duration-500 ${helixStep >= 3 ? 'opacity-100 translate-x-0' : 'opacity-30 -translate-x-4'}`}>
+                  <div className={`p-2 rounded-full ${helixStep >= 3 ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-800 text-slate-600'}`}>
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm">Instant Lead Dispatch</h4>
+                    <p className="text-xs text-slate-400"> notifying {config.brandName} team immediately.</p>
+                  </div>
+                  {helixStep >= 3 && <CheckCircle2 className="ml-auto w-5 h-5 text-green-500" />}
+                </div>
+              </div>
+
+              {helixStep >= 4 && (
+                <div className="mt-8 text-center animate-fade-in-up">
+                  <div className="inline-block px-4 py-2 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-sm font-medium mb-4">
+                    Lead Successfully Processed
+                  </div>
+                  <button 
+                    onClick={() => { setShowHelixEngine(false); setHelixStep(0); }}
+                    className="block w-full py-3 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition"
+                  >
+                    Reset Demonstration
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* The Live Form Preview */}
+        <div className={`w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 ${showHelixEngine ? 'scale-95 opacity-50 blur-sm' : 'scale-100 opacity-100'}`}>
+          
+          {/* Header */}
+          <div className="p-8 text-center border-b border-slate-100" style={{ backgroundColor: config.primaryColor }}>
+            {config.logoUrl ? (
+               <div className="flex justify-center mb-4">
+                 <img src={config.logoUrl} alt={config.brandName} className="h-12 object-contain" />
+               </div>
+            ) : (
+              <div className="inline-block px-3 py-1 bg-white/10 rounded mb-4">
+                <span className={`text-lg font-bold tracking-widest uppercase ${getFontClass()}`} style={{ color: '#fff' }}>
+                  {config.logoText}
+                </span>
+              </div>
+            )}
+            <h2 className={`text-2xl font-bold text-white mb-2 leading-tight ${getFontClass()}`}>
+              {config.headline}
+            </h2>
+            <p className="text-slate-300 text-sm leading-relaxed max-w-sm mx-auto">
+              {config.subtext}
+            </p>
+          </div>
+
+          {/* Form Body */}
+          <form onSubmit={handleSimulateSubmit} className="p-8 space-y-5 bg-white">
+            
+            {/* Phase 3: Honeypot for Spam Protection (Hidden) */}
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="_gotcha">Don't fill this out if you're human:</label>
+              <input type="text" name="_gotcha" id="_gotcha" tabIndex="-1" />
+            </div>
+
+            {/* Standard Fields */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Full Name</label>
+              <input required name="fullName" type="text" placeholder="John Doe" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Email Address</label>
+              <input required name="email" type="email" placeholder="john@company.com" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" />
+            </div>
+
+            {/* Configurable Fields */}
+            {config.fields.phone && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Phone Number</label>
+                <input required name="phone" type="tel" placeholder="(555) 000-0000" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" />
+              </div>
+            )}
+
+            {config.fields.budget && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Estimated Budget</label>
+                <div className="relative">
+                  <select name="budget" className="w-full appearance-none bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition pr-10">
+                    <option value="10-25k">$10,000 - $25,000</option>
+                    <option value="25-50k">$25,000 - $50,000</option>
+                    <option value="50k+">$50,000+</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {config.fields.timeline && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Desired Timeline</label>
+                <div className="relative">
+                  <select name="timeline" className="w-full appearance-none bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition pr-10">
+                    <option value="immediate">Immediately</option>
+                    <option value="1month">Within 1 Month</option>
+                    <option value="1-3months">1-3 Months</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {config.fields.description && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Project Brief</label>
+                <textarea name="description" rows="3" placeholder="Tell us about your goals..." className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"></textarea>
+              </div>
+            )}
+
+            {/* CTA Button */}
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full mt-6 py-4 rounded font-bold text-white shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2 group ${isSubmitting ? 'opacity-75 cursor-wait' : ''}`}
+              style={{ backgroundColor: config.accentColor }}
+            >
+              {isSubmitting ? 'Processing...' : config.ctaText}
+              {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+            </button>
+            
+            <div className="text-center pt-2 space-y-2">
+               <p className="text-[10px] text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
+                 <ShieldCheck className="w-3 h-3" /> Securely Processed by Helix
+               </p>
+               {config.privacyPolicyUrl && (
+                 <a href={config.privacyPolicyUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-400 hover:text-indigo-500 underline transition">
+                   Privacy Policy
+                 </a>
+               )}
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
